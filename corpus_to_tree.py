@@ -3,10 +3,14 @@
 #-----------------------------------------------------     IMPORTS     -----------------------------------------------------#
 import random
 #----------------------------------------------------     FUNCTIONS     ----------------------------------------------------#
-def import_corpus(path,encoding,debth) :
+def import_corpus(path,encoding,debth,mode) :
     # Step 1 : convert file to raw_corpus
     file = open(path,"r", encoding = encoding)
-    corpus = file.read().lower().splitlines()
+    if mode == "sentence" :
+        corpus = file.read().lower().split(".")
+    elif mode == "word" :
+        corpus = file.read().lower().splitlines()      
+    
     file.close()
 
     #Step 2 : preprocess each word
@@ -21,7 +25,7 @@ class Polygraph() :
             self.count = 0
             self.children = {}
 
-    def __init__(self,corpus,debth) :
+    def __init__(self,corpus,debth,noise) :
         self.root = self.Node()
         for word in corpus :
             #print(word)
@@ -36,7 +40,7 @@ class Polygraph() :
                     current = current.children[word[l+d]]
                     current.count += 1
 
-    def show(self,debth) :
+    def show(self,debth,noise) :
         decision_root = self.root #From where 
         word = "_"*debth
         r = ""
@@ -47,12 +51,13 @@ class Polygraph() :
             for d in range(debth) :
                 current = current.children[word[i]]
                 i+=1
+            
 
             # Chose a weigthed random letter 
             letters = list(current.children)
             weigths = []
             for l in letters :
-                weigths.append(current.children[l].count)
+                weigths.append(current.children[l].count*(1 + random.random()*noise - 0.5*noise ))
             r = random.choices(letters,weigths)[0]
             word += r
             
@@ -61,15 +66,3 @@ class Polygraph() :
         return word
 
 
-#--------------------------------------------------     MAIN  PROGRAM     --------------------------------------------------#
-
-path = "liste_francais.txt"
-encoding = "Windows-1252"
-debth = 3
-
-corpus = import_corpus(path,encoding,debth)
-
-polygram = Polygraph(corpus,debth)
-
-for i in range(10) :
-    print(polygram.show(debth))
