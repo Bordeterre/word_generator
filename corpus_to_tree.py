@@ -9,7 +9,7 @@ def import_corpus(path,encoding,debth,mode) :
     if mode == "sentence" :
         corpus = file.read().lower().split(".")
     elif mode == "word" :
-        corpus = file.read().lower().splitlines()      
+        corpus = file.read().lower().split("\n")      
     
     file.close()
 
