@@ -1,7 +1,7 @@
 """                           Conlang generator                            """
 """----------- Settings -----------"""
   
-path = "corpus.txt"
+path = "liste_francais.txt"
 debth = 1
 
 
