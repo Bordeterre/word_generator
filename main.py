@@ -3,17 +3,15 @@
 The example datasets are :
     -liste_francais.txt, from : http://www.3zsoftware.com/fr/listes.php (gutenberg.txt)
     -liste_anglais.txt, from : https://github.com/dwyl/english-words/blob/master/words.txt
-    -frankenstein.txt, from : https://www.gutenberg.org/files/84/84-0.txt
 """
 #---------------------------------------------------     PARAMETERS     ----------------------------------------------------#
-mode = "word" # word / sentence
-noise = 0
 
 #-----------------------------------------------------     IMPORTS     -----------------------------------------------------#
 import os
 import sys
 import corpus_to_tree as ctt
 #----------------------------------------------------     FUNCTIONS     ----------------------------------------------------#
+
 def parameters() :
     path = input("Path to the source file : ")
     while not os.path.isfile(path) and not path == "" :
@@ -37,21 +35,15 @@ def parameters() :
 
 path, encoding, debth = parameters()
 
-corpus = ctt.import_corpus(path,encoding,debth,mode)
-polygram = ctt.Polygraph(corpus,debth,noise)
+corpus = ctt.import_corpus(path,encoding)
+polygram = ctt.Polygraph(debth)
+polygram.process_corpus(corpus)
 
 print()
 while(True) :
-    
     for i in range(10) :
-        if mode == "sentence" :
-            print("============================================")
-            sentence = " ".join(polygram.generate(debth,noise).split("\n"))+"."
-            print("  -  " + sentence)
-        elif mode == "word" :
-            word = polygram.generate(debth,noise)
-            print("  -  " + word)
-    
+        word = polygram.generate_word()
+        print("  -  " + word)
     print()
     print("Press enter to generate 10 new words,")
     choice = input("or type \" quit \" to quit the program : ")

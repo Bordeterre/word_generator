@@ -4,19 +4,24 @@
 import random
 import os
 #----------------------------------------------------     FUNCTIONS     ----------------------------------------------------#
-def import_corpus(path,encoding,debth,mode) :
-    # Step 1 : convert file to raw_corpus
+def import_corpus(path,encoding) :
     file = open(path,"r", encoding = encoding)
-    if mode == "sentence" :
-        corpus = file.read().lower().split(".")
-    elif mode == "word" :
-        corpus = file.read().lower().split("\n")      
-    
+    corpus = file.read().lower().split("\n")
     file.close()
+    
+    i=0
+    while(i < len(corpus)) :
+        if corpus[i] == "" or  corpus[i][0] == "#" :
+            corpus.pop(i)
+        else :
+            i+=1
 
-    #Step 2 : preprocess each word
+    """
     for i in range(len(corpus)) :
-        corpus[i] = "_" * debth + corpus[i] + "_"
+        corpus += corpus[i].split(" ")
+    corpus = corpus[i:]
+    """
+    #corpus = list(dict.fromkeys(corpus))
     
     return corpus
 
@@ -26,56 +31,80 @@ class Polygraph() :
             self.count = 0
             self.children = {}
 
-    def __init__(self,corpus,debth,noise) :
+    def __init__(self,debth) :
+        """Takes in a debth (int), or how far the tree looks to infer the context of a character"""
         self.root = self.Node()
+        self.debth = debth
+
+    def process_corpus(self,corpus) :
+        """Takes in an array of strings, and builds a polygraph tree """
+        
+        # Initializes the loading bar
         i = 0
-        p = 0
+        progress = 0
+        width = os.get_terminal_size().columns-1
+
         for word in corpus :
-            #Progress bar
+            # Loading bar calculations and display
             i+=1
-            if( p != int(i/len(corpus)*60)) :
+            if( progress != int(i/len(corpus)*width)) :
                 os.system("clear")
                 print("Building corpus tree : %.2f %%" %(i/len(corpus)*100))
-                p = int(i/len(corpus)*60)
-                print("o"*p + "."*(60-p))
-            #Calculations
-            for l in range(len(word)-debth) :
-                #For each letter, we associate the 
-                current = self.root
-                for d in range(debth+1) :
-                    #if non_existant node, create node
-                    if  not word[l+d] in current.children :
-                        current.children[word[l+d]] = self.Node()
-                    #count occurences
-                    current = current.children[word[l+d]]
-                    current.count += 1
+                progress = int(i/len(corpus)*width)
+                print("o"*progress + "."*(width-progress))
+
+            # The actual processing
+            self.process_word(word)
 
         print()
         print("Done !")
+  
+    def process_word(self,word) :
+        """Takes in a string, and integrate it into the polygraph tree """      
+        
+        # Preprocess the word. The "_" at the beggining allow to predict the beggining of words
+        word = "_" * self.debth + word + "_"
 
-    def generate(self,debth,noise) :
-        decision_root = self.root #From where 
-        word = "_"*debth
-        r = ""
-        while r != "_" :
-            # Chose the correct determination table to use
-            current = decision_root
-            i = len(word)-debth
-            for d in range(debth) :
+        #For each character, records the *debth* previous characters
+        for l in range(len(word)-self.debth) :
+            current = self.root
+            # Walk down the polygraph tree
+            for d in range(self.debth+1) :
+                # If the branch does not exist, create it
+                if  not word[l+d] in current.children :
+                    current.children[word[l+d]] = self.Node()
+                #Updates the current node and increases its weigth
+                current = current.children[word[l+d]]
+                current.count += 1
+
+    def generate_word(self) :
+        """use the polygraph tree to generate a plausible word"""
+
+        # Initializes the word 
+        word = "_"*self.debth 
+        char = ""
+
+        # While the word hasn't ended
+        while char != "_" :
+            # Align the word's last *debth* letter with the polygraph tree
+            current = self.root
+            for i in range(len(word)-self.debth, len(word)) :
                 current = current.children[word[i]]
-                i+=1
             
-
-            # Chose a weigthed random letter 
+            # Chose a letter to add to the word, using the node's count as weigths.
             letters = list(current.children)
             weigths = []
             for l in letters :
-                weigths.append(current.children[l].count*(1 + random.random()*noise - 0.5*noise ))
-            r = random.choices(letters,weigths)[0]
-            word += r
+                weigths.append(current.children[l].count)
+            char = random.choices(letters,weigths)[0]
+            word += char
             
-        #cleanup :
-        word = word.replace("_", "") 
+        #cleanup the word :
+        word = word.replace("_", "")
+        if len(word) == 1 :
+            word = word[0].upper()
+        if len(word) > 1 :
+            word = word[0].upper() + word[1:]
         return word
 
 
